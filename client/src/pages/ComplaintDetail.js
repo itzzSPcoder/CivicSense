@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { complaintsAPI, commentsAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, ThumbsUp, Calendar, User, ExternalLink, CheckCircle, ArrowLeftRight, Share2, MessageCircle, Clock } from 'lucide-react';
+import { MapPin, ThumbsUp, Calendar, User, CheckCircle, ArrowLeftRight, Share2, MessageCircle, Clock } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS, getCategoryLabel } from '../utils/constants';
 import { format } from 'date-fns';
 
@@ -355,39 +355,6 @@ const ComplaintDetail = () => {
               <div className="text-center py-4 bg-gray-50 rounded-lg">
                 <p className="text-3xl font-bold text-primary-600">{complaint.impactScore}</p>
                 <p className="text-sm text-gray-600">Impact Score</p>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-6 border-t">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Blockchain Info</h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-gray-600 mb-1">Transaction ID</p>
-                  <a
-                    href={`https://sepolia.etherscan.io/tx/${complaint.transactionId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-xs font-mono text-primary-600 hover:text-primary-700 break-all"
-                  >
-                    {complaint.transactionId?.substring(0, 20)}...
-                    <ExternalLink size={12} className="ml-1 flex-shrink-0" />
-                  </a>
-                </div>
-
-                {complaint.resolutionTransactionId && (
-                  <div>
-                    <p className="text-xs text-gray-600 mb-1">Resolution TX</p>
-                    <a
-                      href={`https://sepolia.etherscan.io/tx/${complaint.resolutionTransactionId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center text-xs font-mono text-primary-600 hover:text-primary-700 break-all"
-                    >
-                      {complaint.resolutionTransactionId?.substring(0, 20)}...
-                      <ExternalLink size={12} className="ml-1 flex-shrink-0" />
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
 

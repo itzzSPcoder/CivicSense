@@ -5,7 +5,7 @@ import { Menu, X, Home, Map, FileText, User, Shield, LogOut, BarChart3, Sun, Moo
 import { useTheme } from '../context/ThemeContext';
 
 const Navbar = () => {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isOrgUser, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -63,6 +63,13 @@ const Navbar = () => {
                   <Link to="/admin" className="flex items-center space-x-1 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
                     <Shield size={18} />
                     <span>Admin</span>
+                  </Link>
+                )}
+
+                {isOrgUser && (
+                  <Link to="/org" className="flex items-center space-x-1 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+                    <Shield size={18} />
+                    <span>Org Portal</span>
                   </Link>
                 )}
                 
@@ -150,6 +157,15 @@ const Navbar = () => {
                     onClick={() => setIsOpen(false)}
                   >
                     Admin Panel
+                  </Link>
+                )}
+                {isOrgUser && (
+                  <Link
+                    to="/org"
+                    className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Org Portal
                   </Link>
                 )}
                 <Link

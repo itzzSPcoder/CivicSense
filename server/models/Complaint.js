@@ -15,6 +15,14 @@ const complaintSchema = new mongoose.Schema({
     required: true,
     enum: ['pothole', 'garbage', 'water_leakage', 'streetlight', 'drainage', 'road_damage', 'other']
   },
+  city: {
+    type: String,
+    trim: true
+  },
+  pincode: {
+    type: String,
+    trim: true
+  },
   location: {
     type: {
       type: String,
@@ -27,7 +35,7 @@ const complaintSchema = new mongoose.Schema({
     },
     address: {
       type: String,
-      required: true
+      default: 'Unknown location'
     }
   },
   images: [{
@@ -55,23 +63,9 @@ const complaintSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  blockchainHash: {
-    type: String,
-    required: true
-  },
-  transactionId: {
-    type: String,
-    required: true
-  },
   resolutionImages: [{
     type: String
   }],
-  resolutionHash: {
-    type: String
-  },
-  resolutionTransactionId: {
-    type: String
-  },
   statusHistory: [{
     status: String,
     timestamp: Date,
@@ -99,6 +93,8 @@ const complaintSchema = new mongoose.Schema({
 complaintSchema.index({ location: '2dsphere' });
 complaintSchema.index({ status: 1 });
 complaintSchema.index({ category: 1 });
+complaintSchema.index({ city: 1 });
+complaintSchema.index({ pincode: 1 });
 complaintSchema.index({ createdAt: -1 });
 complaintSchema.index({ impactScore: -1 });
 

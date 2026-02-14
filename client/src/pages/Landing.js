@@ -15,7 +15,7 @@ const Landing = () => {
                   <span className="block text-primary-600">Governance Platform</span>
                 </h1>
                 <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-                  Report civic issues, track their resolution, and ensure accountability with blockchain-backed transparency. 
+                  Report civic issues, track their resolution, and ensure accountability with transparent updates. 
                   Your voice matters in building better cities.
                 </p>
                 <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
@@ -57,9 +57,9 @@ const Landing = () => {
                 <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary-100 text-primary-600">
                   <Shield size={24} />
                 </div>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">Blockchain Security</h3>
+                <h3 className="mt-4 text-lg font-medium text-gray-900">Secure Reporting</h3>
                 <p className="mt-2 text-base text-gray-500">
-                  All complaints are hashed and stored on the Ethereum Sepolia blockchain, ensuring tamper-proof records and complete transparency.
+                  Your reports are securely stored and tracked, ensuring reliable records and complete transparency.
                 </p>
               </div>
 
@@ -89,7 +89,7 @@ const Landing = () => {
                 </div>
                 <h3 className="mt-4 text-lg font-medium text-gray-900">Proof of Resolution</h3>
                 <p className="mt-2 text-base text-gray-500">
-                  Before and after images with blockchain verification ensure accountability in issue resolution.
+                  Before and after images help ensure accountability in issue resolution.
                 </p>
               </div>
 
@@ -109,7 +109,7 @@ const Landing = () => {
                 </div>
                 <h3 className="mt-4 text-lg font-medium text-gray-900">Anomaly Detection</h3>
                 <p className="mt-2 text-base text-gray-500">
-                  Automatic detection of deleted or tampered complaints by comparing database with blockchain records.
+                  Administrative safeguards help keep complaint records accurate.
                 </p>
               </div>
             </div>

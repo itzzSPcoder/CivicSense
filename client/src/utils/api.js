@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 axios.defaults.baseURL = API_URL;
 
@@ -27,8 +27,7 @@ export const adminAPI = {
   resolve: (id, formData) => axios.patch(`/admin/${id}/resolve`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  delete: (id) => axios.delete(`/admin/${id}`),
-  getAnomalies: () => axios.get('/admin/anomalies')
+  delete: (id) => axios.delete(`/admin/${id}`)
 };
 
 export const analyticsAPI = {
@@ -55,6 +54,14 @@ export const commentsAPI = {
 export const userAPI = {
   getProfile: () => axios.get('/users/profile'),
   updateProfile: (data) => axios.patch('/users/profile', data)
+};
+
+export const orgAPI = {
+  listAssignments: (params) => axios.get('/org/assignments', { params }),
+  acknowledge: (id) => axios.patch(`/org/assignments/${id}/acknowledge`),
+  accept: (id) => axios.patch(`/org/assignments/${id}/accept`),
+  inProgress: (id) => axios.patch(`/org/assignments/${id}/in-progress`),
+  resolve: (id) => axios.patch(`/org/assignments/${id}/resolve`)
 };
 
 export default axios;

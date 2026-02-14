@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../utils/api';
-import { User, Mail, Phone, Wallet, FileText, ThumbsUp } from 'lucide-react';
+import { User, Mail, Phone, FileText, ThumbsUp } from 'lucide-react';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -75,15 +75,6 @@ const Profile = () => {
                 </div>
               )}
 
-              {profile?.walletAddress && (
-                <div className="flex items-start">
-                  <Wallet className="text-gray-400 mt-1 mr-3" size={20} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Wallet Address</p>
-                    <p className="text-sm text-gray-600 font-mono break-all">{profile.walletAddress}</p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

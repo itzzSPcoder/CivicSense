@@ -112,14 +112,13 @@ Respond with ONLY the summary sentence, nothing else.`;
 async function chatWithGemini(userMessage) {
   if (!geminiModel) return null;
 
-  const prompt = `You are CivicSense AI Assistant — a helpful chatbot for a civic complaint management platform. The platform allows citizens to report issues like potholes, garbage, water leakage, streetlight problems, drainage issues, and road damage. Complaints are stored on Ethereum Sepolia blockchain for transparency.
+  const prompt = `You are CivicSense AI Assistant — a helpful chatbot for a civic complaint management platform. The platform allows citizens to report issues like potholes, garbage, water leakage, streetlight problems, drainage issues, and road damage.
 
 Features of the platform:
 - Report complaints with photos and location
 - AI auto-detects category and severity
 - Interactive map with heatmap
 - Analytics dashboard with area search
-- Blockchain-verified tamper-proof records
 - Comment threads on complaints
 - Leaderboard with badges
 - Dark mode

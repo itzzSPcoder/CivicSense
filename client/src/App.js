@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
+import OrgRoute from './components/OrgRoute';
 import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -17,6 +18,7 @@ import Profile from './pages/Profile';
 import Analytics from './pages/Analytics';
 import AIChatbot from './components/AIChatbot';
 import Leaderboard from './pages/Leaderboard';
+import OrgPortal from './pages/OrgPortal';
 
 function App() {
   return (
@@ -58,6 +60,12 @@ function App() {
               <AdminRoute>
                 <AdminPanel />
               </AdminRoute>
+            } />
+
+            <Route path="/org" element={
+              <OrgRoute>
+                <OrgPortal />
+              </OrgRoute>
             } />
             
             <Route path="*" element={<Navigate to="/" replace />} />

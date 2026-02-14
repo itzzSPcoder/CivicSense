@@ -78,7 +78,6 @@ const ReportIssue = () => {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [blockchainData, setBlockchainData] = useState(null);
   const [error, setError] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -275,25 +274,19 @@ const ReportIssue = () => {
 
       const response = await complaintsAPI.create(formDataToSend);
       setSuccess(true);
-      setBlockchainData(response.data.blockchain);
 
       setTimeout(() => {
         navigate('/dashboard');
       }, 3000);
     } catch (err) {
-      const status = err.response?.status;
       const msg = err.response?.data?.message;
-      if (status === 503) {
-        setError(`Blockchain Error: ${msg || 'Transaction failed on Sepolia network. Your complaint was NOT saved. Please try again.'}`);
-      } else {
-        setError(msg || 'Failed to submit complaint. Please try again.');
-      }
+      setError(msg || 'Failed to submit complaint. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (success && blockchainData) {
+  if (success) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white rounded-lg shadow-soft p-8 text-center">
@@ -301,40 +294,6 @@ const ReportIssue = () => {
             <CheckCircle className="h-10 w-10 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Issue Reported Successfully!</h2>
-          <p className="text-gray-600 mb-4">Your complaint is now <strong>permanently recorded on the Sepolia blockchain</strong>.</p>
-
-          <div className="bg-gray-50 rounded-lg p-4 mb-4 text-left space-y-3">
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">Transaction ID</p>
-              <div className="flex items-center mt-1">
-                <p className="text-xs font-mono text-gray-800 break-all flex-1">{blockchainData.transactionId}</p>
-                <a
-                  href={`https://sepolia.etherscan.io/tx/${blockchainData.transactionId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 text-primary-600 hover:text-primary-700 flex-shrink-0"
-                >
-                  <ExternalLink size={16} />
-                </a>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">SHA-256 Hash</p>
-              <p className="text-xs font-mono text-gray-800 break-all mt-1">{blockchainData.hash}</p>
-            </div>
-            {blockchainData.blockNumber && (
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase">Block Number</p>
-                <p className="text-xs font-mono text-gray-800 mt-1">{blockchainData.blockNumber}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-center text-xs text-gray-500 mb-4">
-            <Shield size={14} className="mr-1 text-green-600" />
-            <span>Tamper-proof record — this complaint cannot be deleted or altered</span>
-          </div>
-
           <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
         </div>
       </div>
@@ -671,12 +630,12 @@ const ReportIssue = () => {
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                <span>Recording on Blockchain...</span>
+                <span>Submitting...</span>
               </>
             ) : (
               <>
                 <Shield size={16} />
-                <span>Submit & Record on Blockchain</span>
+                <span>Submit</span>
               </>
             )}
           </button>

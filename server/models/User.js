@@ -25,12 +25,12 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],
+    enum: ['user', 'admin', 'org_user'],
     default: 'user'
   },
-  walletAddress: {
-    type: String,
-    trim: true
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization'
   },
   complaintsReported: [{
     type: mongoose.Schema.Types.ObjectId,

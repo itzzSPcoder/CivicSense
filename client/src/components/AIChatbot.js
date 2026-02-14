@@ -4,11 +4,9 @@ import { aiAPI } from '../utils/api';
 
 const KNOWLEDGE_BASE = [
   { q: ['how to file', 'how to report', 'report complaint', 'file complaint', 'submit complaint', 'new complaint', 'kaise kare'],
-    a: 'To file a complaint:\n1. Click "Report Issue" in the navbar\n2. Enter a title and description\n3. Select a category (AI will auto-suggest!)\n4. Click on the map to set location\n5. Upload photos (optional)\n6. Click Submit — your complaint is recorded on blockchain!' },
+    a: 'To file a complaint:\n1. Click "Report Issue" in the navbar\n2. Enter a title and description\n3. Select a category (AI will auto-suggest!)\n4. Click on the map to set location\n5. Upload photos (optional)\n6. Click Submit to register your complaint.' },
   { q: ['track complaint', 'status', 'check status', 'where is my complaint', 'complaint status', 'kya hua'],
-    a: 'You can track your complaint status on the Dashboard page. Each complaint shows its current status: Reported → Verified → In Progress → Resolved. The status history is tamper-proof on blockchain.' },
-  { q: ['blockchain', 'how blockchain', 'why blockchain', 'tamper proof', 'secure'],
-    a: 'CivicSense uses Ethereum Sepolia blockchain to store complaint hashes. This means:\n• No one can delete or alter complaints\n• Every status change is recorded permanently\n• Full transparency and accountability\n• Each complaint gets a unique transaction ID on Etherscan' },
+    a: 'You can track your complaint status on the Dashboard page. Each complaint shows its current status: Reported → Verified → In Progress → Resolved.' },
   { q: ['map', 'location', 'find complaint', 'nearby', 'area', 'search map'],
     a: 'The Map page shows all complaints on an interactive map. You can:\n• Search any city or area\n• Toggle satellite view\n• Enable heatmap to see complaint hotspots\n• Click markers to see complaint details\n• Your location is auto-detected' },
   { q: ['analytics', 'stats', 'statistics', 'data', 'chart', 'graph', 'trend'],
@@ -20,9 +18,9 @@ const KNOWLEDGE_BASE = [
   { q: ['ai', 'artificial intelligence', 'smart', 'auto detect', 'suggestion'],
     a: 'CivicSense uses AI to:\n• Auto-detect complaint category from your description\n• Assess severity (Low/Medium/High/Critical)\n• Find similar/duplicate complaints nearby\n• Generate smart summaries\nAll powered by our built-in NLP engine!' },
   { q: ['admin', 'authority', 'government', 'resolve', 'who fixes'],
-    a: 'Admins (municipal authorities) can:\n• Verify reported complaints\n• Update status to In Progress/Resolved\n• Upload resolution proof photos\n• All actions are recorded on blockchain for accountability' },
+    a: 'Admins (municipal authorities) can:\n• Verify reported complaints\n• Update status to In Progress/Resolved\n• Upload resolution proof photos' },
   { q: ['hello', 'hi', 'hey', 'help', 'what can you do', 'namaste'],
-    a: 'Hello! 👋 I\'m the CivicSense AI Assistant. I can help you with:\n• How to file a complaint\n• Tracking complaint status\n• Understanding blockchain security\n• Using the map and analytics\n• Any questions about the platform\n\nJust ask me anything!' },
+    a: 'Hello! 👋 I\'m the CivicSense AI Assistant. I can help you with:\n• How to file a complaint\n• Tracking complaint status\n• Using the map and analytics\n• Any questions about the platform\n\nJust ask me anything!' },
   { q: ['heatmap', 'heat map', 'hotspot', 'red zone'],
     a: 'The Heatmap shows complaint density on the map. Red/orange zones = many complaints, green = fewer. Toggle it using the 🔥 flame button on the Map page. Great for identifying problem areas!' },
   { q: ['image', 'photo', 'upload', 'picture', 'camera'],
@@ -64,7 +62,7 @@ function findAnswer(query) {
     }
   }
 
-  return bestMatch || "I'm not sure about that. Try asking about:\n• How to file a complaint\n• Tracking complaint status\n• Blockchain security\n• Map & Analytics features\n• AI features\n\nOr type 'help' for an overview!";
+  return bestMatch || "I'm not sure about that. Try asking about:\n• How to file a complaint\n• Tracking complaint status\n• Map & Analytics features\n• AI features\n\nOr type 'help' for an overview!";
 }
 
 const AIChatbot = () => {
@@ -198,7 +196,7 @@ const AIChatbot = () => {
           {/* Quick Actions */}
           {messages.length <= 1 && (
             <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-              {['How to report?', 'Track status', 'What is blockchain?', 'AI features'].map(q => (
+              {['How to report?', 'Track status', 'AI features'].map(q => (
                 <button
                   key={q}
                   onClick={() => { setInput(q); setTimeout(() => handleSend(), 0); setInput(q); }}

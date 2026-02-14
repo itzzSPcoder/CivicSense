@@ -8,8 +8,7 @@ const Register = () => {
     name: '',
     email: '',
     password: '',
-    phone: '',
-    walletAddress: ''
+    phone: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -130,20 +129,6 @@ const Register = () => {
               />
             </div>
 
-            <div>
-              <label htmlFor="walletAddress" className="block text-sm font-medium text-gray-700 mb-1">
-                Wallet Address
-              </label>
-              <input
-                id="walletAddress"
-                name="walletAddress"
-                type="text"
-                value={formData.walletAddress}
-                onChange={handleChange}
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                placeholder="Optional - for blockchain transactions"
-              />
-            </div>
           </div>
 
           <div>

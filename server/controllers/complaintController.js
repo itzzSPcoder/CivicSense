@@ -1,10 +1,10 @@
 const Complaint = require('../models/Complaint');
 const User = require('../models/User');
-const { registerComplaintOnChain, verifyComplaintIntegrity } = require('../utils/blockchain');
+const { createAssignmentsForComplaint, sendNotificationsForComplaint } = require('../utils/assignmentService');
 
 exports.createComplaint = async (req, res) => {
   try {
-    const { title, description, category, location, address } = req.body;
+    const { title, description, category, location, address, city, pincode } = req.body;
 
     if (!title || !description || !category || !location) {
       return res.status(400).json({
@@ -15,6 +15,15 @@ exports.createComplaint = async (req, res) => {
 
     const locationData = typeof location === 'string' ? JSON.parse(location) : location;
 
+    if (!locationData || !Array.isArray(locationData.coordinates)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid location format'
+      });
+    }
+
+    locationData.address = locationData.address || address || 'Unknown location';
+
     const imagePaths = req.files ? req.files.map(file => `/uploads/complaints/${file.filename}`) : [];
 
     const complaintData = {
@@ -22,7 +31,8 @@ exports.createComplaint = async (req, res) => {
       description,
       category,
       location: locationData,
-      address: address || 'Unknown location'
+      city: city || undefined,
+      pincode: pincode || undefined
     };
 
     const complaint = new Complaint({
@@ -36,25 +46,6 @@ exports.createComplaint = async (req, res) => {
       }]
     });
 
-    // MANDATORY: Register on blockchain FIRST — if this fails, nothing is saved
-    let blockchainResult;
-    try {
-      blockchainResult = await registerComplaintOnChain(
-        complaint._id.toString(),
-        complaintData
-      );
-    } catch (bcError) {
-      console.error('❌ Blockchain registration failed:', bcError.message);
-      return res.status(503).json({
-        success: false,
-        message: 'Blockchain transaction failed. Complaint NOT saved — data integrity requires on-chain registration.',
-        error: bcError.message
-      });
-    }
-
-    complaint.blockchainHash = blockchainResult.hash;
-    complaint.transactionId = blockchainResult.transactionId;
-
     await complaint.save();
 
     await User.findByIdAndUpdate(req.user.id, {
@@ -63,15 +54,16 @@ exports.createComplaint = async (req, res) => {
 
     await complaint.populate('reporter', 'name email');
 
+    setImmediate(() => {
+      createAssignmentsForComplaint(complaint)
+        .then(() => sendNotificationsForComplaint(complaint))
+        .catch(() => {});
+    });
+
     res.status(201).json({
       success: true,
-      message: 'Complaint registered successfully on blockchain and database',
-      complaint,
-      blockchain: {
-        transactionId: blockchainResult.transactionId,
-        hash: blockchainResult.hash,
-        blockNumber: blockchainResult.blockNumber
-      }
+      message: 'Complaint registered successfully',
+      complaint
     });
   } catch (error) {
     console.error('Create complaint error:', error);
@@ -88,6 +80,8 @@ exports.getComplaints = async (req, res) => {
     const { 
       status, 
       category, 
+      city,
+      pincode,
       search,
       sortBy = 'createdAt', 
       order = 'desc',
@@ -98,12 +92,16 @@ exports.getComplaints = async (req, res) => {
     const query = {};
     if (status) query.status = status;
     if (category) query.category = category;
+    if (city) query.city = city;
+    if (pincode) query.pincode = pincode;
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), 'i');
       query.$or = [
         { title: searchRegex },
         { description: searchRegex },
-        { address: searchRegex },
+        { 'location.address': searchRegex },
+        { city: searchRegex },
+        { pincode: searchRegex },
         { category: searchRegex }
       ];
     }

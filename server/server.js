@@ -13,13 +13,24 @@ const analyticsRoutes = require('./routes/analytics');
 const aiRoutes = require('./routes/ai');
 const commentRoutes = require('./routes/comments');
 const leaderboardRoutes = require('./routes/leaderboard');
-const { verifyBlockchainConnection } = require('./utils/blockchain');
+const { seedOrganizationsIfEmpty } = require('./utils/seedOrganizations');
+const orgRoutes = require('./routes/org');
 
 const app = express();
 
 app.use(helmet());
+const allowedOrigins = String(process.env.CLIENT_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.length === 0) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -41,6 +52,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/org', orgRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'CivicSense API is running' });
@@ -57,15 +69,14 @@ app.use((err, req, res, next) => {
 
 async function connectDB() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/civicsense';
+    await mongoose.connect(mongoUri);
     console.log('✅ MongoDB connected');
   } catch (err) {
-    console.log('⚠️  MongoDB not found locally, starting in-memory database...');
-    const { MongoMemoryServer } = require('mongodb-memory-server');
-    const mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
-    await mongoose.connect(uri);
-    console.log('✅ In-memory MongoDB connected at', uri);
+    console.error('❌ MongoDB connection failed');
+    console.error(err.message);
+    console.error('Make sure MongoDB is running locally and MONGODB_URI is set correctly.');
+    process.exit(1);
   }
 }
 
@@ -77,28 +88,13 @@ async function startServer() {
   // Step 1: Connect to MongoDB
   await connectDB();
 
-  // Step 2: Verify blockchain connection (MANDATORY)
-  console.log('\n🔐 Verifying blockchain connection...');
-  try {
-    await verifyBlockchainConnection();
-    console.log('✅ Blockchain connection verified\n');
-  } catch (error) {
-    console.error('\n' + error.message);
-    console.error('\n========================================');
-    console.error('  🚫 SERVER CANNOT START');
-    console.error('  Blockchain connection is MANDATORY.');
-    console.error('  Fix the above errors and restart.');
-    console.error('========================================\n');
-    process.exit(1);
-  }
+  await seedOrganizationsIfEmpty();
 
-  // Step 3: Start Express server
+  // Step 2: Start Express server
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log('========================================');
     console.log(`  🚀 Server running on port ${PORT}`);
-    console.log(`  ⛓️  Blockchain: CONNECTED`);
-    console.log(`  📦 Contract: ${process.env.CONTRACT_ADDRESS}`);
     console.log('========================================\n');
   });
 }

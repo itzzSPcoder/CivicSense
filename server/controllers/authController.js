@@ -9,7 +9,7 @@ const generateToken = (id) => {
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, phone, walletAddress } = req.body;
+    const { name, email, password, phone } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -26,12 +26,16 @@ exports.register = async (req, res) => {
       });
     }
 
+    const isAdminEmail =
+      process.env.ADMIN_EMAIL &&
+      String(process.env.ADMIN_EMAIL).toLowerCase().trim() === String(email).toLowerCase().trim();
+
     const user = await User.create({
       name,
       email,
       password,
       phone,
-      walletAddress
+      ...(isAdminEmail ? { role: 'admin' } : {})
     });
 
     const token = generateToken(user._id);
