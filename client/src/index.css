@@ -84,3 +84,13 @@ code {
 .dark .bg-gray-100 {
   background-color: #374151 !important;
 }
+
+/* Logo: remove white background in both modes */
+.app-logo {
+  mix-blend-mode: multiply;
+}
+
+.dark .app-logo {
+  mix-blend-mode: screen;
+  filter: brightness(1.1);
+}

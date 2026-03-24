@@ -22,7 +22,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <img src="/assets/logo.svg" alt="CivicSense" className="w-12 h-12 object-contain" />
+              <img src="/assets/logo.png" alt="CivicSense" className="w-12 h-12 object-contain app-logo" />
               <span className="text-xl font-bold text-gray-900 dark:text-white">CivicSense</span>
             </Link>
           </div>

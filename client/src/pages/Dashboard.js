@@ -76,7 +76,7 @@ const Dashboard = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 flex items-center space-x-4">
-        <img src="/assets/logo.svg" alt="CivicSense" className="w-14 h-14 object-contain" />
+        <img src="/assets/logo.png" alt="CivicSense" className="w-14 h-14 object-contain app-logo" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="mt-1 text-gray-600">Track and manage civic issues in your community</p>
