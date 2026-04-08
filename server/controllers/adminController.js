@@ -2,7 +2,7 @@ const supabase = require('../utils/supabase');
 const exifParser = require('exif-parser');
 const fs = require('fs');
 const haversine = require('haversine-distance');
-const { updateComplaintStatusOnChain, resolveComplaintOnChain } = require('../utils/blockchain');
+const { adminResolveOnChain } = require('../utils/blockchain');
 const { formatComplaintResponse } = require('./complaintController');
 
 const MAX_DISTANCE_METERS = 100; // 100 meters tolerance
@@ -43,16 +43,6 @@ exports.verifyComplaint = async (req, res) => {
       updated_by: req.user.id
     });
 
-    // Update status on blockchain
-    try {
-      if (complaint.on_chain) {
-        await updateComplaintStatusOnChain(complaint.id, 'Verified');
-        console.log(`✅ Complaint ${complaint.id} status updated on blockchain: Verified`);
-      }
-    } catch (blockchainError) {
-      console.error('⚠️ Blockchain status update failed:', blockchainError.message);
-    }
-
     // Fetch updated complaint
     const { data: updated } = await supabase
       .from('complaints')
@@ -77,7 +67,7 @@ exports.verifyComplaint = async (req, res) => {
 exports.updateComplaintStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['Reported', 'Verified', 'InProgress', 'Resolved'];
+    const validStatuses = ['Reported', 'Verified', 'InProgress', 'Resolved', 'Confirmed'];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
@@ -110,16 +100,6 @@ exports.updateComplaintStatus = async (req, res) => {
       timestamp: new Date().toISOString(),
       updated_by: req.user.id
     });
-
-    // Update on blockchain
-    try {
-      if (complaint.on_chain) {
-        await updateComplaintStatusOnChain(complaint.id, status);
-        console.log(`✅ Complaint ${complaint.id} status updated on blockchain: ${status}`);
-      }
-    } catch (blockchainError) {
-      console.error('⚠️ Blockchain status update failed:', blockchainError.message);
-    }
 
     const { data: updated } = await supabase
       .from('complaints')
@@ -218,25 +198,19 @@ exports.resolveComplaint = async (req, res) => {
       updated_by: req.user.id
     });
 
-    const resolutionData = {
-      complaintId: complaint.id,
-      resolutionImages: resolutionImagePaths,
-      resolvedAt,
-      resolvedBy: req.user.id
-    };
-
-    // Register resolution on blockchain
+    // Record admin resolution on blockchain
+    let blockchainTx = null;
     try {
       if (complaint.on_chain) {
-        const blockchainResult = await resolveComplaintOnChain(complaint.id, resolutionData);
-        await supabase
-          .from('complaints')
-          .update({
-            resolution_hash: blockchainResult.resolutionHash,
-            resolution_transaction_id: blockchainResult.transactionId
-          })
-          .eq('id', req.params.id);
-        console.log(`✅ Complaint ${complaint.id} resolved on blockchain: ${blockchainResult.transactionId}`);
+        const bcResult = await adminResolveOnChain(complaint.id);
+        if (bcResult) {
+          await supabase
+            .from('complaints')
+            .update({ resolution_transaction_id: bcResult.transactionId })
+            .eq('id', req.params.id);
+          blockchainTx = bcResult;
+          console.log(`✅ Complaint ${complaint.id} resolved on blockchain: ${bcResult.transactionId}`);
+        }
       }
     } catch (blockchainError) {
       console.error('⚠️ Blockchain resolution failed:', blockchainError.message);
@@ -251,7 +225,8 @@ exports.resolveComplaint = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Complaint resolved successfully',
-      complaint: formatComplaintResponse(updated, null)
+      complaint: formatComplaintResponse(updated, null),
+      blockchainTx
     });
   } catch (error) {
     res.status(500).json({

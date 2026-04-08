@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { MapPin, ThumbsUp, Calendar, User, CheckCircle, ArrowLeftRight, Share2, MessageCircle, Clock } from 'lucide-react';
 import { STATUS_COLORS, STATUS_LABELS, getCategoryLabel } from '../utils/constants';
 import { format } from 'date-fns';
+import BlockchainTxModal from '../components/BlockchainTxModal';
 
 const BeforeAfterSlider = ({ beforeSrc, afterSrc }) => {
   const containerRef = useRef(null);
@@ -80,6 +81,8 @@ const ComplaintDetail = () => {
   const [officerUploading, setOfficerUploading] = useState(false);
   const [completionConfirmed, setCompletionConfirmed] = useState(false);
   const [officerError, setOfficerError] = useState('');
+  const [confirming, setConfirming] = useState(false);
+  const [blockchainTx, setBlockchainTx] = useState(null);
   const ongoingFileRef = useRef(null);
   const completionFileRef = useRef(null);
 
@@ -145,6 +148,26 @@ const ComplaintDetail = () => {
     }
   };
 
+  const handleConfirmResolution = async () => {
+    if (!isAuthenticated || confirming) return;
+    setConfirming(true);
+    try {
+      const response = await complaintsAPI.confirmResolution(id);
+      if (response.data.success) {
+        setComplaint(response.data.complaint);
+        if (response.data.blockchainTx) {
+          setBlockchainTx({ ...response.data.blockchainTx, _action: 'User Confirmed Resolution' });
+        }
+      }
+    } catch (error) {
+      console.error('Error confirming resolution:', error);
+      alert(error.response?.data?.message || 'Failed to confirm resolution');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const isReporter = user && complaint && (user.id === complaint.reporter?.id || user.id === complaint.reporter);
   const isOfficer = user?.role === 'org_user';
 
   const apiBase = (process.env.REACT_APP_API_URL || '').replace('/api', '');
@@ -228,12 +251,28 @@ const ComplaintDetail = () => {
               </div>
             )}
             
-            {/* Show resolution images prominently for resolved complaints */}
-            {complaint.status === 'Resolved' && (
+            {/* Confirmed banner */}
+            {complaint.status === 'Confirmed' && (
+              <div className="bg-green-50 border-t-4 border-green-500 p-4">
+                <h3 className="text-lg font-semibold text-green-800 mb-1 flex items-center">
+                  <CheckCircle className="text-green-600 mr-2" size={20} />
+                  Confirmed & Closed
+                </h3>
+                <p className="text-green-700 text-sm">The reporter has confirmed that this issue has been resolved.</p>
+                {complaint.resolutionTransactionId && (
+                  <a href={`https://sepolia.etherscan.io/tx/${complaint.resolutionTransactionId}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 hover:underline mt-1 inline-block">
+                    View confirmation on blockchain
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Show resolution images prominently for resolved/confirmed complaints */}
+            {(complaint.status === 'Resolved' || complaint.status === 'Confirmed') && (
               <div className="bg-green-50 border-t-4 border-green-400 p-4">
                 <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
                   <CheckCircle className="text-green-600 mr-2" size={20} />
-                  ✅ RESOLVED — After Images
+                  {complaint.status === 'Confirmed' ? 'Resolution Images' : 'Admin Resolved — Awaiting Your Confirmation'}
                 </h3>
                 {complaint.resolutionImages && complaint.resolutionImages.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -260,8 +299,47 @@ const ComplaintDetail = () => {
               </div>
             )}
             
+            {/* Confirm Resolution button — only for the reporter when status is Resolved */}
+            {complaint.status === 'Resolved' && isReporter && (
+              <div className="bg-orange-50 border-t-4 border-orange-400 p-4">
+                {confirming ? (
+                  <div className="flex flex-col items-center space-y-4 py-6">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full border-4 border-green-200 border-t-green-600 animate-spin"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-lg">⛓️</span>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-base font-semibold text-gray-800">Recording Confirmation on Blockchain...</p>
+                      <p className="text-sm text-gray-500 mt-1">Signing transaction on Sepolia network</p>
+                      <p className="text-xs text-gray-400 mt-1">This may take 15-30 seconds, please wait</p>
+                    </div>
+                    <div className="flex space-x-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-semibold text-orange-800 mb-2">Admin has marked this issue as resolved</h3>
+                    <p className="text-orange-700 text-sm mb-4">
+                      Please review the resolution images above. If the issue is truly fixed, confirm below. This will be recorded on the blockchain.
+                    </p>
+                    <button
+                      onClick={handleConfirmResolution}
+                      className="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition"
+                    >
+                      Yes, I Confirm This Is Resolved
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Fallback: Show resolution images for non-resolved complaints if they exist */}
-            {complaint.status !== 'Resolved' && complaint.resolutionImages && complaint.resolutionImages.length > 0 && (
+            {!['Resolved', 'Confirmed'].includes(complaint.status) && complaint.resolutionImages && complaint.resolutionImages.length > 0 && (
               <div className="bg-blue-50 border-t-2 border-blue-400 p-4">
                 <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
                   <CheckCircle className="text-blue-600 mr-2" size={20} />
@@ -626,6 +704,15 @@ const ComplaintDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Blockchain TX Popup */}
+      {blockchainTx && (
+        <BlockchainTxModal
+          txData={blockchainTx}
+          actionLabel={blockchainTx._action}
+          onClose={() => setBlockchainTx(null)}
+        />
+      )}
     </div>
   );
 };

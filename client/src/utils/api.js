@@ -16,7 +16,8 @@ export const complaintsAPI = {
   vote: (id) => axios.post(`/complaints/${id}/vote`),
   getNearby: (lng, lat, maxDistance) => axios.get('/complaints/nearby', {
     params: { lng, lat, maxDistance }
-  })
+  }),
+  confirmResolution: (id) => axios.post(`/complaints/${id}/confirm`)
 };
 
 export const adminAPI = {

@@ -3,190 +3,95 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+/**
+ * @title CivicSense
+ * @notice 3-step complaint lifecycle on Sepolia:
+ *         1. User reports a case   → reportCase()
+ *         2. Admin marks resolved  → adminResolve()
+ *         3. Reporter confirms     → userConfirm()  (case fully closed)
+ */
 contract CivicSense is Ownable {
-    enum ComplaintStatus {
-        Reported,
-        Verified,
-        InProgress,
-        Resolved
+
+    enum Status {
+        Reported,           // 0 – user filed the complaint
+        AdminResolved,      // 1 – admin says it is fixed
+        Confirmed           // 2 – reporter agrees it is fixed
     }
 
-    struct Complaint {
-        string complaintHash;
-        string beforeLandmarkHash; // Hash of landmarks from the initial image
-        string afterLandmarkHash;  // Hash of landmarks from the resolution image
-        uint256 timestamp;
-        ComplaintStatus status;
-        address reporter;
-        bool exists;
+    struct Case {
+        bytes32 dataHash;       // SHA-256 hash of off-chain complaint data
+        uint256 reportedAt;
+        uint256 resolvedAt;
+        uint256 confirmedAt;
+        Status  status;
+        bool    exists;
     }
 
-    struct StatusUpdate {
-        ComplaintStatus status;
-        uint256 timestamp;
-        string resolutionHash;
-    }
+    mapping(string => Case) public cases;
+    string[] public caseIds;
 
-    mapping(string => Complaint) public complaints;
-    mapping(string => StatusUpdate[]) public statusHistory;
-    
-    string[] public complaintIds;
-
-    event ComplaintRegistered(
-        string indexed complaintId,
-        string complaintHash,
-        address indexed reporter,
-        uint256 timestamp
-    );
-
-    event ComplaintStatusUpdated(
-        string indexed complaintId,
-        ComplaintStatus status,
-        uint256 timestamp
-    );
-
-    event ComplaintResolved(
-        string indexed complaintId,
-        string resolutionHash,
-        uint256 timestamp
-    );
+    // ── Events ──────────────────────────────────────────────
+    event CaseReported(string indexed caseId, bytes32 dataHash, uint256 timestamp);
+    event CaseResolved(string indexed caseId, uint256 timestamp);
+    event CaseConfirmed(string indexed caseId, uint256 timestamp);
 
     constructor() Ownable(msg.sender) {}
 
-    function registerComplaint(
-        string memory _complaintId,
-        string memory _complaintHash,
-        string memory _beforeLandmarkHash
-    ) external {
-        require(!complaints[_complaintId].exists, "Complaint already exists");
-        require(bytes(_complaintHash).length > 0, "Hash cannot be empty");
-        require(bytes(_beforeLandmarkHash).length > 0, "Landmark hash cannot be empty");
+    // ── 1. User reports a case ──────────────────────────────
+    function reportCase(string calldata _caseId, bytes32 _dataHash) external {
+        require(!cases[_caseId].exists, "Case already exists");
+        require(_dataHash != bytes32(0), "Hash cannot be empty");
 
-        complaints[_complaintId] = Complaint({
-            complaintHash: _complaintHash,
-            beforeLandmarkHash: _beforeLandmarkHash,
-            afterLandmarkHash: "",
-            timestamp: block.timestamp,
-            status: ComplaintStatus.Reported,
-            reporter: msg.sender,
+        cases[_caseId] = Case({
+            dataHash: _dataHash,
+            reportedAt: block.timestamp,
+            resolvedAt: 0,
+            confirmedAt: 0,
+            status: Status.Reported,
             exists: true
         });
 
-        statusHistory[_complaintId].push(StatusUpdate({
-            status: ComplaintStatus.Reported,
-            timestamp: block.timestamp,
-            resolutionHash: ""
-        }));
-
-        complaintIds.push(_complaintId);
-
-        emit ComplaintRegistered(
-            _complaintId,
-            _complaintHash,
-            msg.sender,
-            block.timestamp
-        );
+        caseIds.push(_caseId);
+        emit CaseReported(_caseId, _dataHash, block.timestamp);
     }
 
-    function updateComplaintStatus(
-        string memory _complaintId,
-        ComplaintStatus _status
-    ) external onlyOwner {
-        require(complaints[_complaintId].exists, "Complaint does not exist");
-        require(_status != ComplaintStatus.Reported, "Cannot revert to Reported");
+    // ── 2. Admin marks case as resolved ─────────────────────
+    function adminResolve(string calldata _caseId) external onlyOwner {
+        Case storage c = cases[_caseId];
+        require(c.exists, "Case does not exist");
+        require(c.status == Status.Reported, "Case is not in Reported state");
 
-        complaints[_complaintId].status = _status;
-
-        statusHistory[_complaintId].push(StatusUpdate({
-            status: _status,
-            timestamp: block.timestamp,
-            resolutionHash: ""
-        }));
-
-        emit ComplaintStatusUpdated(_complaintId, _status, block.timestamp);
+        c.status = Status.AdminResolved;
+        c.resolvedAt = block.timestamp;
+        emit CaseResolved(_caseId, block.timestamp);
     }
 
-    function resolveComplaint(
-        string memory _complaintId,
-        string memory _resolutionHash,
-        string memory _afterLandmarkHash
-    ) external onlyOwner {
-        require(complaints[_complaintId].exists, "Complaint does not exist");
-        require(bytes(_resolutionHash).length > 0, "Resolution hash required");
-        require(bytes(_afterLandmarkHash).length > 0, "After landmark hash required");
+    // ── 3. Reporter confirms the resolution ─────────────────
+    function userConfirm(string calldata _caseId) external {
+        Case storage c = cases[_caseId];
+        require(c.exists, "Case does not exist");
+        require(c.status == Status.AdminResolved, "Case is not in AdminResolved state");
 
-        Complaint storage complaint = complaints[_complaintId];
-        
-        // Verify that the landmarks from the before and after images match
-        require(
-            keccak256(bytes(complaint.beforeLandmarkHash)) == keccak256(bytes(_afterLandmarkHash)),
-            "Landmark verification failed"
-        );
-
-        complaint.status = ComplaintStatus.Resolved;
-        complaint.afterLandmarkHash = _afterLandmarkHash;
-
-        statusHistory[_complaintId].push(StatusUpdate({
-            status: ComplaintStatus.Resolved,
-            timestamp: block.timestamp,
-            resolutionHash: _resolutionHash
-        }));
-
-        emit ComplaintResolved(_complaintId, _resolutionHash, block.timestamp);
+        c.status = Status.Confirmed;
+        c.confirmedAt = block.timestamp;
+        emit CaseConfirmed(_caseId, block.timestamp);
     }
 
-    function verifyComplaint(
-        string memory _complaintId,
-        string memory _complaintHash
-    ) external view returns (bool) {
-        require(complaints[_complaintId].exists, "Complaint does not exist");
-        return keccak256(bytes(complaints[_complaintId].complaintHash)) == keccak256(bytes(_complaintHash));
-    }
-
-    function getComplaint(string memory _complaintId)
-        external
-        view
-        returns (
-            string memory complaintHash,
-            string memory beforeLandmarkHash,
-            string memory afterLandmarkHash,
-            uint256 timestamp,
-            ComplaintStatus status,
-            address reporter
-        )
+    // ── View helpers ────────────────────────────────────────
+    function getCase(string calldata _caseId)
+        external view
+        returns (bytes32 dataHash, uint256 reportedAt, uint256 resolvedAt, uint256 confirmedAt, Status status)
     {
-        require(complaints[_complaintId].exists, "Complaint does not exist");
-        Complaint memory c = complaints[_complaintId];
-        return (c.complaintHash, c.beforeLandmarkHash, c.afterLandmarkHash, c.timestamp, c.status, c.reporter);
+        Case memory c = cases[_caseId];
+        require(c.exists, "Case does not exist");
+        return (c.dataHash, c.reportedAt, c.resolvedAt, c.confirmedAt, c.status);
     }
 
-    function getStatusHistory(string memory _complaintId)
-        external
-        view
-        returns (StatusUpdate[] memory)
-    {
-        require(complaints[_complaintId].exists, "Complaint does not exist");
-        return statusHistory[_complaintId];
+    function caseExists(string calldata _caseId) external view returns (bool) {
+        return cases[_caseId].exists;
     }
 
-    function getTotalComplaints() external view returns (uint256) {
-        return complaintIds.length;
-    }
-
-    function getComplaintIdByIndex(uint256 _index)
-        external
-        view
-        returns (string memory)
-    {
-        require(_index < complaintIds.length, "Index out of bounds");
-        return complaintIds[_index];
-    }
-
-    function complaintExists(string memory _complaintId)
-        external
-        view
-        returns (bool)
-    {
-        return complaints[_complaintId].exists;
+    function getTotalCases() external view returns (uint256) {
+        return caseIds.length;
     }
 }

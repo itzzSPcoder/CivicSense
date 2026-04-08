@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, aiAPI } from '../utils/api';
 import { CATEGORIES } from '../utils/constants';
-import { MapPin, Upload, CheckCircle, ExternalLink, Shield, Satellite, Map as MapIcon, Crosshair, Loader2, Brain, Sparkles, AlertTriangle, Zap } from 'lucide-react';
+import { MapPin, Upload, CheckCircle, ExternalLink, Shield, Satellite, Map as MapIcon, Crosshair, Loader2, Brain, Sparkles, AlertTriangle, Zap, Link } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -84,6 +84,7 @@ const ReportIssue = () => {
   const [duplicates, setDuplicates] = useState([]);
   const [showDuplicates, setShowDuplicates] = useState(false);
   const [imageAiResult, setImageAiResult] = useState(null);
+  const [blockchainTx, setBlockchainTx] = useState(null);
   const aiTimeout = useRef(null);
   const navigate = useNavigate();
 
@@ -280,9 +281,13 @@ const ReportIssue = () => {
       const response = await complaintsAPI.create(formDataToSend);
       setSuccess(true);
 
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 3000);
+      if (response.data.blockchainTx) {
+        setBlockchainTx({ ...response.data.blockchainTx, _action: 'Complaint Registered on Blockchain' });
+      } else {
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 3000);
+      }
     } catch (err) {
       const msg = err.response?.data?.message;
       setError(msg || 'Failed to submit complaint. Please try again.');
@@ -299,7 +304,41 @@ const ReportIssue = () => {
             <CheckCircle className="h-10 w-10 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Issue Reported Successfully!</h2>
-          <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+          {blockchainTx ? (
+            <div className="mt-4 space-y-3">
+              <div className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+                <Link size={14} className="mr-1.5" /> Recorded on Blockchain
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 text-left">
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Transaction Hash</p>
+                <code className="text-xs text-gray-700 break-all font-mono">{blockchainTx.transactionId}</code>
+              </div>
+              {blockchainTx.hash && (
+                <div className="bg-gray-50 rounded-lg p-4 text-left">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Data Hash</p>
+                  <code className="text-xs text-gray-700 break-all font-mono">{blockchainTx.hash}</code>
+                </div>
+              )}
+              <a
+                href={`https://sepolia.etherscan.io/tx/${blockchainTx.transactionId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+              >
+                <ExternalLink size={14} className="mr-2" /> View on Etherscan
+              </a>
+              <div>
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="mt-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition text-sm font-medium"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+          )}
         </div>
       </div>
     );
@@ -646,6 +685,28 @@ const ReportIssue = () => {
           </button>
         </div>
       </form>
+
+      {/* Full-screen blockchain loading overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+            <div className="relative mx-auto w-20 h-20 mb-5">
+              <div className="w-20 h-20 rounded-full border-4 border-green-200 border-t-green-600 animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-2xl">⛓️</span>
+              </div>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Registering on Blockchain</h3>
+            <p className="text-sm text-gray-500 mt-2">Uploading images & signing transaction on Sepolia network</p>
+            <p className="text-xs text-gray-400 mt-1">This may take 15-30 seconds, please don't close this page</p>
+            <div className="flex justify-center space-x-1 mt-4">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 const supabase = require('../utils/supabase');
 const { createAssignmentsForComplaint, sendNotificationsForComplaint } = require('../utils/assignmentService');
-const { registerComplaintOnChain, generateHash } = require('../utils/blockchain');
+const { reportCaseOnChain, userConfirmOnChain, generateHash } = require('../utils/blockchain');
 
 exports.createComplaint = async (req, res) => {
   try {
@@ -79,42 +79,42 @@ exports.createComplaint = async (req, res) => {
     });
 
     // Register on blockchain for tamper-proof record
+    let blockchainTx = null;
     try {
       const complaintDataForHash = {
         id: complaint.id,
         title: complaint.title,
         description: complaint.description,
         category: complaint.category,
-        location: {
-          type: 'Point',
-          coordinates: [complaint.location_lng, complaint.location_lat],
-          address: complaint.location_address
-        },
+        location: [complaint.location_lng, complaint.location_lat],
         reporter: req.user.id,
         timestamp: complaint.created_at
       };
 
-      const blockchainResult = await registerComplaintOnChain(
+      const blockchainResult = await reportCaseOnChain(
         complaint.id,
         complaintDataForHash
       );
 
-      await supabase
-        .from('complaints')
-        .update({
-          blockchain_hash: blockchainResult.hash,
-          transaction_id: blockchainResult.transactionId,
-          block_number: blockchainResult.blockNumber,
-          on_chain: true
-        })
-        .eq('id', complaint.id);
+      if (blockchainResult) {
+        await supabase
+          .from('complaints')
+          .update({
+            blockchain_hash: blockchainResult.hash,
+            transaction_id: blockchainResult.transactionId,
+            block_number: blockchainResult.blockNumber,
+            on_chain: true
+          })
+          .eq('id', complaint.id);
 
-      complaintResponse.blockchainHash = blockchainResult.hash;
-      complaintResponse.transactionId = blockchainResult.transactionId;
-      complaintResponse.blockNumber = blockchainResult.blockNumber;
-      complaintResponse.onChain = true;
+        complaintResponse.blockchainHash = blockchainResult.hash;
+        complaintResponse.transactionId = blockchainResult.transactionId;
+        complaintResponse.blockNumber = blockchainResult.blockNumber;
+        complaintResponse.onChain = true;
+        blockchainTx = blockchainResult;
 
-      console.log(`✅ Complaint ${complaint.id} registered on blockchain: ${blockchainResult.transactionId}`);
+        console.log(`✅ Complaint ${complaint.id} registered on blockchain: ${blockchainResult.transactionId}`);
+      }
     } catch (blockchainError) {
       console.error('⚠️ Blockchain registration failed (complaint saved in DB):', blockchainError.message);
     }
@@ -122,7 +122,8 @@ exports.createComplaint = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Complaint registered successfully',
-      complaint: complaintResponse
+      complaint: complaintResponse,
+      blockchainTx: blockchainTx || null
     });
   } catch (error) {
     console.error('Create complaint error:', error);
@@ -429,6 +430,87 @@ exports.getComplaintsByLocation = async (req, res) => {
   }
 };
 
+// ── Reporter confirms admin's resolution ────────────────────
+exports.confirmResolution = async (req, res) => {
+  try {
+    const { data: complaint, error } = await supabase
+      .from('complaints')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error || !complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    if (complaint.reporter_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Only the reporter can confirm resolution' });
+    }
+
+    if (complaint.status !== 'Resolved') {
+      return res.status(400).json({ success: false, message: 'Complaint must be in Resolved state to confirm' });
+    }
+
+    if (complaint.resolution_hash === 'USER_CONFIRMED') {
+      return res.status(400).json({ success: false, message: 'Resolution already confirmed' });
+    }
+
+    const confirmedAt = new Date().toISOString();
+
+    // DB CHECK constraint blocks 'Confirmed' status, so we use resolution_hash as flag
+    await supabase
+      .from('complaints')
+      .update({ resolution_hash: 'USER_CONFIRMED' })
+      .eq('id', req.params.id);
+
+    await supabase.from('status_history').insert({
+      complaint_id: req.params.id,
+      status: 'Confirmed',
+      timestamp: confirmedAt,
+      updated_by: req.user.id
+    });
+
+    // Record confirmation on blockchain
+    let blockchainTx = null;
+    try {
+      if (complaint.on_chain) {
+        const bcResult = await userConfirmOnChain(complaint.id);
+        if (bcResult) {
+          await supabase
+            .from('complaints')
+            .update({ resolution_transaction_id: bcResult.transactionId })
+            .eq('id', req.params.id);
+          blockchainTx = bcResult;
+          console.log(`✅ Complaint ${complaint.id} confirmed on blockchain: ${bcResult.transactionId}`);
+        }
+      }
+    } catch (bcErr) {
+      console.error('⚠️ Blockchain confirm failed:', bcErr.message);
+    }
+
+    const { data: updated } = await supabase
+      .from('complaints')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    const { data: reporter } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', updated.reporter_id)
+      .single();
+
+    res.status(200).json({
+      success: true,
+      message: 'Resolution confirmed by reporter',
+      complaint: formatComplaintResponse(updated, reporter),
+      blockchainTx
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error confirming resolution', error: error.message });
+  }
+};
+
 // Helper to format complaint from DB columns to the shape the frontend expects
 function formatComplaintResponse(c, reporter) {
   return {
@@ -445,7 +527,7 @@ function formatComplaintResponse(c, reporter) {
       address: c.location_address
     },
     images: c.images || [],
-    status: c.status,
+    status: (c.status === 'Resolved' && c.resolution_hash === 'USER_CONFIRMED') ? 'Confirmed' : c.status,
     reporter: reporter || c.reporter_id,
     votes: c.votes,
     voters: [], // voters are in a separate table now

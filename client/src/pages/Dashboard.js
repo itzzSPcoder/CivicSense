@@ -54,8 +54,8 @@ const Dashboard = () => {
       color: 'bg-blue-100 text-blue-600'
     },
     {
-      name: 'Resolved',
-      value: complaints.filter(c => c.status === 'Resolved').length,
+      name: 'Closed',
+      value: complaints.filter(c => c.status === 'Resolved' || c.status === 'Confirmed').length,
       icon: CheckCircle,
       color: 'bg-green-100 text-green-600'
     },
@@ -119,6 +119,7 @@ const Dashboard = () => {
                 <option value="Verified">Verified</option>
                 <option value="InProgress">In Progress</option>
                 <option value="Resolved">Resolved</option>
+                <option value="Confirmed">Confirmed</option>
               </select>
 
               <select

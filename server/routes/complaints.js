@@ -5,7 +5,8 @@ const {
   getComplaints,
   getComplaintById,
   voteComplaint,
-  getComplaintsByLocation
+  getComplaintsByLocation,
+  confirmResolution
 } = require('../controllers/complaintController');
 const { protect } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -15,5 +16,6 @@ router.get('/', getComplaints);
 router.get('/nearby', getComplaintsByLocation);
 router.get('/:id', getComplaintById);
 router.post('/:id/vote', protect, voteComplaint);
+router.post('/:id/confirm', protect, confirmResolution);
 
 module.exports = router;

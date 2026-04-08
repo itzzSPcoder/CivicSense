@@ -12,14 +12,16 @@ export const STATUS_COLORS = {
   Reported: 'bg-yellow-100 text-yellow-800',
   Verified: 'bg-blue-100 text-blue-800',
   InProgress: 'bg-purple-100 text-purple-800',
-  Resolved: 'bg-green-100 text-green-800'
+  Resolved: 'bg-orange-100 text-orange-800',
+  Confirmed: 'bg-green-100 text-green-800'
 };
 
 export const STATUS_LABELS = {
   Reported: 'Reported',
   Verified: 'Verified',
   InProgress: 'Ongoing',
-  Resolved: 'Completed'
+  Resolved: 'Resolved (Awaiting Confirmation)',
+  Confirmed: 'Confirmed & Closed'
 };
 
 export const MAPBOX_STYLE = 'mapbox://styles/mapbox/streets-v12';

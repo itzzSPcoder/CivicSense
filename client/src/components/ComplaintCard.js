@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 
 const ComplaintCard = ({ complaint }) => {
   const headerImage =
-    complaint.status === 'Resolved' && complaint.resolutionImages && complaint.resolutionImages.length > 0
+    (complaint.status === 'Resolved' || complaint.status === 'Confirmed') && complaint.resolutionImages && complaint.resolutionImages.length > 0
       ? complaint.resolutionImages[0]
       : complaint.images && complaint.images.length > 0
         ? complaint.images[0]

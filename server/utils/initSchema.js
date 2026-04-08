@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS complaints (
   location_lat DOUBLE PRECISION,
   location_address TEXT DEFAULT 'Unknown location',
   images JSONB NOT NULL DEFAULT '[]',
-  status TEXT NOT NULL DEFAULT 'Reported' CHECK (status IN ('Reported','Verified','InProgress','Resolved')),
+  status TEXT NOT NULL DEFAULT 'Reported' CHECK (status IN ('Reported','Verified','InProgress','Resolved','Confirmed')),
   reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   votes INTEGER NOT NULL DEFAULT 0,
   impact_score INTEGER NOT NULL DEFAULT 0,
@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS complaints (
   block_number INTEGER,
   resolution_hash TEXT,
   resolution_transaction_id TEXT,
+  confirmed_at TIMESTAMPTZ,
+  confirm_transaction_id TEXT,
   on_chain BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

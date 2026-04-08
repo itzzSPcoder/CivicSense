@@ -1,5 +1,5 @@
 const supabase = require('../utils/supabase');
-const { verifyComplaintIntegrity, checkComplaintExistsOnChain, generateHash } = require('../utils/blockchain');
+const { getCaseFromChain, generateHash } = require('../utils/blockchain');
 const { formatComplaintResponse } = require('./complaintController');
 
 exports.verifyComplaintIntegrity = async (req, res) => {
@@ -11,13 +11,9 @@ exports.verifyComplaintIntegrity = async (req, res) => {
       .single();
 
     if (error || !complaint) {
-      return res.status(404).json({
-        success: false,
-        message: 'Complaint not found'
-      });
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
-    // Fetch reporter
     const { data: reporter } = await supabase
       .from('users')
       .select('id, name, email')
@@ -34,59 +30,40 @@ exports.verifyComplaintIntegrity = async (req, res) => {
       });
     }
 
+    // Re-hash the current DB data and compare with stored hash
     const complaintDataForHash = {
       id: complaint.id,
       title: complaint.title,
       description: complaint.description,
       category: complaint.category,
-      location: {
-        type: 'Point',
-        coordinates: [complaint.location_lng, complaint.location_lat],
-        address: complaint.location_address
-      },
+      location: [complaint.location_lng, complaint.location_lat],
       reporter: complaint.reporter_id,
       timestamp: complaint.created_at
     };
-
     const currentHash = generateHash(complaintDataForHash);
     const hashMatch = currentHash === complaint.blockchain_hash;
 
-    let blockchainVerified = false;
-    try {
-      blockchainVerified = await verifyComplaintIntegrity(
-        complaint.id,
-        complaintDataForHash
-      );
-    } catch (err) {
-      console.error('Blockchain verification error:', err);
-    }
-
-    const existsOnChain = await checkComplaintExistsOnChain(complaint.id);
-
-    const isTampered = !hashMatch || !blockchainVerified;
+    // Try reading on-chain state
+    let chainData = null;
+    try { chainData = await getCaseFromChain(complaint.id); } catch (_) {}
 
     res.status(200).json({
       success: true,
-      verified: !isTampered,
-      onChain: existsOnChain,
+      verified: hashMatch,
+      onChain: !!chainData,
       hashMatch,
-      blockchainVerified,
       transactionId: complaint.transaction_id,
       blockNumber: complaint.block_number,
       blockchainHash: complaint.blockchain_hash,
       currentHash,
-      message: isTampered
-        ? '⚠️ WARNING: Data has been tampered with! Hash mismatch detected.'
-        : '✅ Complaint data is verified and has not been tampered with.',
-      cannotBeDeleted: existsOnChain,
+      chainStatus: chainData ? chainData.status : null,
+      message: hashMatch
+        ? '✅ Complaint data is verified and has not been tampered with.'
+        : '⚠️ WARNING: Data may have been tampered with! Hash mismatch detected.',
       complaint: formatComplaintResponse(complaint, reporter)
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error verifying complaint',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error verifying complaint', error: error.message });
   }
 };
 
@@ -99,23 +76,15 @@ exports.getBlockchainProof = async (req, res) => {
       .single();
 
     if (error || !complaint) {
-      return res.status(404).json({
-        success: false,
-        message: 'Complaint not found'
-      });
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
     if (!complaint.on_chain) {
-      return res.status(404).json({
-        success: false,
-        message: 'Complaint not registered on blockchain'
-      });
+      return res.status(404).json({ success: false, message: 'Complaint not registered on blockchain' });
     }
 
-    // Fetch reporter and verifiedBy
     const { data: reporter } = await supabase.from('users').select('id, name, email').eq('id', complaint.reporter_id).single();
 
-    // Fetch status history
     const { data: statusHistory } = await supabase
       .from('status_history')
       .select('*')
@@ -132,32 +101,21 @@ exports.getBlockchainProof = async (req, res) => {
       blockchain: {
         onChain: complaint.on_chain,
         hash: complaint.blockchain_hash,
-        transactionId: complaint.transaction_id,
+        reportTxId: complaint.transaction_id,
+        resolveTxId: complaint.resolution_transaction_id || null,
+        confirmTxId: complaint.resolution_transaction_id || null,
         blockNumber: complaint.block_number,
-        explorerUrl: `https://mumbai.polygonscan.com/tx/${complaint.transaction_id}`
+        explorerUrl: `https://sepolia.etherscan.io/tx/${complaint.transaction_id}`
       },
       statusHistory: (statusHistory || []).map(s => ({
         status: s.status,
         timestamp: s.timestamp,
         updatedBy: s.updated_by
-      })),
-      resolution: complaint.resolution_hash ? {
-        hash: complaint.resolution_hash,
-        transactionId: complaint.resolution_transaction_id,
-        resolvedAt: complaint.resolved_at,
-        explorerUrl: `https://mumbai.polygonscan.com/tx/${complaint.resolution_transaction_id}`
-      } : null
+      }))
     };
 
-    res.status(200).json({
-      success: true,
-      proof
-    });
+    res.status(200).json({ success: true, proof });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching blockchain proof',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Error fetching blockchain proof', error: error.message });
   }
 };

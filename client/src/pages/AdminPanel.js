@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { complaintsAPI, adminAPI, analyticsAPI } from '../utils/api';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { CheckCircle, AlertTriangle, TrendingUp, Users } from 'lucide-react';
+import { CheckCircle, AlertTriangle, TrendingUp, Users, Loader2 } from 'lucide-react';
 import ComplaintCard from '../components/ComplaintCard';
+import BlockchainTxModal from '../components/BlockchainTxModal';
 
 const AdminPanel = () => {
   const [complaints, setComplaints] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [blockchainTx, setBlockchainTx] = useState(null);
+  const [resolvingId, setResolvingId] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -48,16 +51,22 @@ const AdminPanel = () => {
   };
 
   const handleResolveComplaint = async (id, resolutionImages) => {
+    setResolvingId(id);
     try {
       const formData = new FormData();
       Array.from(resolutionImages).forEach(file => {
         formData.append('resolutionImages', file);
       });
-      await adminAPI.resolve(id, formData);
+      const response = await adminAPI.resolve(id, formData);
+      if (response.data.blockchainTx) {
+        setBlockchainTx({ ...response.data.blockchainTx, _action: 'Admin Resolved Complaint on Blockchain' });
+      }
       fetchData();
     } catch (error) {
       console.error('Error resolving complaint:', error);
       alert(error.response?.data?.message || 'Error resolving complaint');
+    } finally {
+      setResolvingId(null);
     }
   };
 
@@ -243,7 +252,7 @@ const AdminPanel = () => {
         <div className="bg-white rounded-lg shadow-soft p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Manage Complaints</h2>
           <div className="space-y-4">
-            {complaints.filter(c => c.status !== 'Resolved').map((complaint) => (
+            {complaints.filter(c => c.status !== 'Resolved' && c.status !== 'Confirmed').map((complaint) => (
               <div key={complaint._id} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -274,25 +283,43 @@ const AdminPanel = () => {
                     )}
                     {complaint.status === 'InProgress' && (
                       <div className="space-y-2">
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          id={`resolve-${complaint._id}`}
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files.length > 0) {
-                              handleResolveComplaint(complaint._id, e.target.files);
-                            }
-                          }}
-                        />
-                        <label
-                          htmlFor={`resolve-${complaint._id}`}
-                          className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition cursor-pointer inline-block text-center"
-                        >
-                          Upload After Images & Complete
-                        </label>
-                        <p className="text-xs text-gray-500 mt-1">Required: Upload photos showing the resolved issue</p>
+                        {resolvingId === complaint._id ? (
+                          <div className="flex flex-col items-center space-y-3 py-4 px-6">
+                            <div className="relative">
+                              <div className="w-12 h-12 rounded-full border-4 border-green-200 border-t-green-600 animate-spin"></div>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-green-600 text-xs">⛓️</span>
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-semibold text-gray-800">Recording on Blockchain...</p>
+                              <p className="text-xs text-gray-500 mt-1">Uploading images & signing transaction on Sepolia</p>
+                              <p className="text-xs text-gray-400 mt-0.5">This may take 15-30 seconds</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/*"
+                              id={`resolve-${complaint._id}`}
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files.length > 0) {
+                                  handleResolveComplaint(complaint._id, e.target.files);
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`resolve-${complaint._id}`}
+                              className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition cursor-pointer inline-block text-center"
+                            >
+                              Upload After Images & Complete
+                            </label>
+                            <p className="text-xs text-gray-500 mt-1">Required: Upload photos showing the resolved issue</p>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -323,6 +350,15 @@ const AdminPanel = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Blockchain TX Popup */}
+      {blockchainTx && (
+        <BlockchainTxModal
+          txData={blockchainTx}
+          actionLabel={blockchainTx._action}
+          onClose={() => setBlockchainTx(null)}
+        />
       )}
     </div>
   );
