@@ -1,236 +1,305 @@
-# 🏛️ CivicSense
+<div align="center">
+  <img src="img/Civic Sense.png" alt="CivicSense" width="280" />
 
-**Blockchain-backed civic issue reporting platform for transparent urban governance**
+  # CivicSense
 
-## 🚀 Features
+  **Blockchain-Verified Civic Issue Reporting Platform**
 
-- **Secure Authentication** - JWT-based login/signup
-- **Issue Reporting** - Upload photos, auto-detect location, categorize issues
-- **Interactive Map** - Real-time visualization of all civic issues
-- **Voting System** - Community-driven prioritization
-- **Impact Score** - Automatic calculation: votes × days_pending
-- **Blockchain Integration** - Tamper-proof complaint records on Polygon
-- **Status Tracking** - Transparent complaint lifecycle
-- **Proof-of-Resolution** - Before/after images with blockchain verification
-- **Landmark / Surrounding Object Detection** - AI-powered verification of "before" and "after" images
-- **Admin Panel** - Complaint verification and management
-- **Analytics Dashboard** - Insights and statistics
+  Report civic issues. Track resolutions. Verify on-chain.
 
-## 🛠️ Tech Stack
+  ![Solidity](https://img.shields.io/badge/Solidity-0.8.20-363636?logo=solidity)
+  ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
+  ![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express)
+  ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)
+  ![Ethereum](https://img.shields.io/badge/Network-Sepolia-6C5CE7?logo=ethereum)
+  ![License](https://img.shields.io/badge/License-MIT-green)
 
-### Frontend
-- React.js
-- Tailwind CSS
-- Axios
-- React Router
-- Mapbox GL JS
-- Recharts (Analytics)
-
-### Backend
-- Node.js
-- Express.js
-- MongoDB
-- JWT Authentication
-- Multer (File uploads)
-- Express Rate Limit
-
-### Blockchain
-- Polygon (Mumbai Testnet)
-- Solidity
-- Ethers.js
-- Hardhat
-
-## 📁 Project Structure
-
-```
-CivicSense/
-├── client/              # React frontend
-│   ├── src/
-│   │   ├── components/  # Reusable components
-│   │   ├── pages/       # Page components
-│   │   ├── utils/       # Utilities
-│   │   └── App.js
-│   └── package.json
-├── server/              # Express backend
-│   ├── controllers/     # Route controllers
-│   ├── models/          # MongoDB schemas
-│   ├── routes/          # API routes
-│   ├── middleware/      # Auth, validation
-│   ├── utils/           # Helpers
-│   └── server.js
-├── smart-contract/      # Solidity contracts
-│   ├── contracts/
-│   ├── scripts/
-│   └── hardhat.config.js
-└── README.md
-```
-
-## 🔧 Installation
-
-### Prerequisites
-- Node.js (v16+)
-- MongoDB
-- MetaMask wallet
-- Polygon Mumbai testnet MATIC
-
-### Setup
-
-1. **Clone and install dependencies**
-```bash
-cd CivicSense
-npm run install-all
-```
-
-2. **Configure environment variables**
-
-Create `.env` in `server/`:
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/civicsense
-JWT_SECRET=your_jwt_secret_key_here
-POLYGON_RPC_URL=https://rpc-mumbai.maticvigil.com
-CONTRACT_ADDRESS=your_deployed_contract_address
-PRIVATE_KEY=your_wallet_private_key
-```
-
-Create `.env` in `client/`:
-```env
-REACT_APP_API_URL=http://localhost:5000/api
-REACT_APP_MAPBOX_TOKEN=your_mapbox_token
-REACT_APP_CONTRACT_ADDRESS=your_deployed_contract_address
-REACT_APP_POLYGON_RPC=https://rpc-mumbai.maticvigil.com
-```
-
-3. **Deploy Smart Contract**
-```bash
-cd smart-contract
-npx hardhat compile
-npx hardhat run scripts/deploy.js --network mumbai
-```
-
-4. **Start MongoDB**
-```bash
-mongod
-```
-
-5. **Run the application**
-```bash
-npm run dev
-```
-
-Frontend: http://localhost:3000
-Backend: http://localhost:5000
-
-## 🔐 Security Features
-
-- JWT authentication with secure httpOnly cookies
-- Password hashing with bcrypt
-- Rate limiting on API endpoints
-- Input validation and sanitization
-- File upload size limits
-- CORS configuration
-- XSS protection
-
-## 🧪 Testing
-
-```bash
-# Backend tests
-cd server
-npm test
-
-# Frontend tests
-cd client
-npm test
-```
-
-## 📊 Architecture
-
-### Hybrid Approach
-
-**Off-chain (MongoDB)**
-- User data
-- Complaint details
-- Images (URLs)
-- Votes & comments
-- Status updates
-
-**On-chain (Polygon)**
-- Complaint hash (SHA-256)
-- **Landmark Hashes**: Hashes of detected objects from "before" and "after" images for verification.
-- Timestamp
-- Status changes
-- Immutable audit trail
-
-### Data Flow
-
-1. User submits complaint
-2. Data saved to MongoDB
-3. SHA-256 hash generated
-4. Hash pushed to blockchain
-5. Transaction ID returned
-6. Any tampering detected via hash mismatch
-
-## 🎨 Design Philosophy
-
-Modern, minimal, professional UI inspired by:
-- Stripe's clean aesthetics
-- Notion's spacious layouts
-- Modern SaaS best practices
-
-## 📱 Responsive Design
-
-Fully responsive across:
-- Desktop (1920px+)
-- Laptop (1024px+)
-- Tablet (768px+)
-- Mobile (320px+)
-
-## 🚀 Deployment
-
-### Frontend (Vercel/Netlify)
-```bash
-cd client
-npm run build
-```
-
-### Backend (Heroku/Railway)
-```bash
-cd server
-# Follow platform-specific deployment guide
-```
-
-### Database (MongoDB Atlas)
-- Create cluster
-- Update connection string
-- Configure IP whitelist
-
-## 📈 Performance Optimizations
-
-- Lazy loading for map components
-- Image optimization and compression
-- API response caching
-- Pagination for large datasets
-- Debounced search inputs
-- Code splitting
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Open pull request
-
-## 📄 License
-
-MIT License - see LICENSE file
-
-## 🆘 Support
-
-For issues and questions:
-- GitHub Issues
-- Email: support@civicsense.io
+</div>
 
 ---
 
-**Built with ❤️ for transparent governance**
+## What is CivicSense?
+
+CivicSense is a full-stack civic issue reporting platform where every complaint goes through a **3-step blockchain-verified lifecycle**:
+
+```
+User Reports Issue ──→ Admin Resolves ──→ User Confirms Resolution
+     (TX #1)              (TX #2)              (TX #3)
+```
+
+Each step is recorded as a transaction on the **Ethereum Sepolia testnet**, creating a tamper-proof audit trail. Citizens can report potholes, garbage overflow, broken streetlights, and more — with photo evidence, GPS location, and AI-powered categorization.
+
+---
+
+## Features
+
+### Core
+- **Issue Reporting** — Upload photos, auto-detect GPS location, AI-suggested category & severity
+- **Blockchain Verification** — Every report, resolution, and confirmation is signed on-chain (Sepolia)
+- **3-Step Lifecycle** — `Reported → Verified → InProgress → Resolved → Confirmed`
+- **Before/After Comparison** — Side-by-side slider to compare issue vs resolution images
+- **Transaction Popup** — Shows TX hash, block number, and Etherscan link after every blockchain action
+
+### Intelligence
+- **AI Category Detection** — Google Gemini 1.5 Flash auto-suggests issue category with confidence %
+- **AI Severity Analysis** — Automatic severity scoring (low / medium / high / critical)
+- **Duplicate Detection** — Finds similar nearby complaints before submission
+- **AI Image Analysis** — Validates uploaded images for relevance
+
+### Community
+- **Voting System** — Upvote issues to increase priority
+- **Impact Score** — `votes × days_pending` — higher score = higher priority
+- **Comments** — Discuss issues with other citizens
+- **Leaderboard** — Top reporters ranked by contribution
+
+### Admin
+- **Admin Panel** — Verify, assign, track, and resolve complaints
+- **Resolution Upload** — Upload "after" images with GPS + EXIF verification
+- **Analytics Dashboard** — Category breakdown, trends, resolution rates
+- **Organization Portal** — Assign complaints to civic departments
+
+### Notifications
+- **Email Notifications** — Nodemailer SMTP integration
+- **SMS / WhatsApp** — Twilio integration for status updates
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 18, Tailwind CSS, Leaflet Maps, Recharts, Lucide Icons |
+| **Backend** | Node.js, Express.js, JWT Auth, Multer, Rate Limiting |
+| **Database** | Supabase (PostgreSQL) |
+| **Blockchain** | Solidity 0.8.20, Ethers.js v6, Hardhat, Sepolia Testnet |
+| **AI** | Google Gemini 1.5 Flash (with keyword fallback) |
+| **Notifications** | Nodemailer (SMTP), Twilio (SMS/WhatsApp) |
+
+---
+
+## Project Structure
+
+```
+CivicSense/
+├── client/                     # React frontend (CRA)
+│   ├── src/
+│   │   ├── components/         # ComplaintCard, BlockchainTxModal, Navbar, etc.
+│   │   ├── pages/              # Dashboard, ReportIssue, MapView, AdminPanel, etc.
+│   │   ├── context/            # AuthContext
+│   │   └── utils/              # api.js, constants.js
+│   └── package.json
+├── server/                     # Express backend
+│   ├── controllers/            # complaint, admin, auth, verification, ai, etc.
+│   ├── routes/                 # API route definitions
+│   ├── middleware/             # auth (JWT), upload (Multer)
+│   ├── utils/                  # blockchain.js, supabase.js, initSchema.js
+│   ├── scripts/                # createAdmin.js
+│   └── server.js
+├── smart-contract/             # Solidity + Hardhat
+│   ├── contracts/
+│   │   └── CivicSense.sol      # 3-step lifecycle contract
+│   ├── scripts/
+│   │   └── deploy.js
+│   └── hardhat.config.js
+├── img/                        # Logo assets
+├── .gitignore
+├── LICENSE
+└── README.md
+```
+
+---
+
+## Blockchain Architecture
+
+### Smart Contract — `CivicSense.sol`
+
+The contract implements a 3-step complaint lifecycle with on-chain state tracking:
+
+```solidity
+enum Status { Reported, AdminResolved, Confirmed }
+
+function reportCase(string caseId, bytes32 dataHash)   // Step 1: Citizen reports
+function adminResolve(string caseId)                    // Step 2: Admin resolves
+function userConfirm(string caseId)                     // Step 3: Citizen confirms
+```
+
+### Hybrid Storage Model
+
+| Stored Off-Chain (Supabase) | Stored On-Chain (Sepolia) |
+|---|---|
+| User profiles, images, comments | Complaint data hash (SHA-256) |
+| Votes, assignments, notifications | Report timestamp |
+| Full complaint details | Resolution timestamp |
+| Status history | Confirmation timestamp |
+| GPS coordinates | Immutable status transitions |
+
+### Data Flow
+
+```
+1. User submits complaint with photos + GPS
+2. Backend saves to Supabase, generates SHA-256 hash
+3. reportCase(id, hash) → TX signed with server wallet → Sepolia
+4. TX hash + block number stored in DB, shown to user
+5. Admin uploads resolution images → adminResolve(id) → TX #2
+6. Reporter reviews & confirms → userConfirm(id) → TX #3
+7. Case permanently closed on-chain — fully verifiable on Etherscan
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** v16+
+- **Supabase** account (free tier works)
+- **Alchemy** account for Sepolia RPC (free tier works)
+- **Ethereum wallet** with Sepolia ETH (get from [Sepolia Faucet](https://sepoliafaucet.com))
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/nishant-uxs/CivicSense.git
+cd CivicSense
+
+# Install backend dependencies
+cd server && npm install
+
+# Install frontend dependencies
+cd ../client && npm install
+
+# Install smart contract dependencies
+cd ../smart-contract && npm install
+```
+
+### 2. Configure Environment
+
+Create `server/.env`:
+```env
+PORT=5000
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+JWT_SECRET=your_jwt_secret
+
+# Blockchain (Sepolia)
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your_key
+PRIVATE_KEY=your_wallet_private_key
+CONTRACT_ADDRESS=your_deployed_contract_address
+
+# Optional
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+Create `client/.env`:
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_MAPBOX_TOKEN=your_mapbox_token
+```
+
+### 3. Deploy Smart Contract
+
+```bash
+cd smart-contract
+npx hardhat compile
+npx hardhat run scripts/deploy.js --network sepolia
+```
+
+Copy the deployed address into `server/.env` as `CONTRACT_ADDRESS`.
+
+### 4. Create Admin User
+
+```bash
+cd server
+node scripts/createAdmin.js
+```
+
+### 5. Run
+
+```bash
+# Terminal 1 — Backend
+cd server && node server.js
+
+# Terminal 2 — Frontend
+cd client && npm start
+```
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:5000/api |
+
+---
+
+## API Endpoints
+
+### Auth
+| Method | Route | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register user |
+| POST | `/api/auth/login` | Login |
+| GET | `/api/auth/me` | Get current user |
+
+### Complaints
+| Method | Route | Description |
+|---|---|---|
+| GET | `/api/complaints` | List all complaints |
+| POST | `/api/complaints` | Create complaint (+ blockchain TX) |
+| GET | `/api/complaints/:id` | Get complaint details |
+| POST | `/api/complaints/:id/vote` | Upvote a complaint |
+| POST | `/api/complaints/:id/confirm` | Confirm resolution (+ blockchain TX) |
+
+### Admin
+| Method | Route | Description |
+|---|---|---|
+| POST | `/api/admin/complaints/:id/verify` | Verify complaint |
+| PUT | `/api/admin/complaints/:id/status` | Update status |
+| POST | `/api/admin/complaints/:id/resolve` | Resolve with images (+ blockchain TX) |
+
+---
+
+## Complaint Lifecycle
+
+```
+┌─────────┐     ┌──────────┐     ┌────────────┐     ┌──────────┐     ┌───────────┐
+│Reported  │────→│ Verified │────→│ InProgress │────→│ Resolved │────→│ Confirmed │
+│  (⛓️ TX1) │     │          │     │            │     │  (⛓️ TX2) │     │  (⛓️ TX3)  │
+└─────────┘     └──────────┘     └────────────┘     └──────────┘     └───────────┘
+   User            Admin            Admin             Admin            User
+  reports         verifies        starts work     uploads after     confirms fix
+                                                    images
+```
+
+---
+
+## Screenshots
+
+### Blockchain Transaction Modal
+After every on-chain action, users see the TX hash, block number, and a direct link to Etherscan:
+
+> Transaction Hash, Data Hash (SHA-256), Block Number — all copyable with one click.
+
+### Before / After Slider
+Side-by-side draggable comparison of the issue before and after resolution.
+
+---
+
+## Security
+
+- **JWT Authentication** with bcrypt password hashing
+- **Rate Limiting** on all API endpoints
+- **CORS** configured for frontend origin
+- **File Upload Limits** — max 5 images, 5MB each
+- **Input Sanitization** on all user inputs
+- **EXIF GPS Verification** — resolution images must be taken near the complaint location
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE)
+
+---
+
+<div align="center">
+  <b>Built for transparent governance</b>
+</div>
